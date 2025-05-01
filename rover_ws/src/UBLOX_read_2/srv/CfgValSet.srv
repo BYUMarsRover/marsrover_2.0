@@ -1,6 +1,0 @@
-uint8 layer
-uint32 key
-uint64 cfg_data
----
-bool got_ack
-bool got_nack

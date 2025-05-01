@@ -1,0 +1,9 @@
+# EmergencyStop service
+
+# description of the error
+string error
+
+---
+
+# flag indicating emergency stop success
+bool stopped

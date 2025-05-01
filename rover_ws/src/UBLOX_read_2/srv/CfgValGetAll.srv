@@ -1,9 +1,0 @@
-uint8 layer
-uint16 position
-string filepath
----
-CfgValGetType[] cfg_data
-bool ack
-bool nack
-bool gotcfg
-uint8 flags

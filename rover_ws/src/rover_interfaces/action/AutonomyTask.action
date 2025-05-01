@@ -1,8 +1,0 @@
-# AutonomyTask.action - Nelson Durrant, Feb 2025
-# Used to start and monitor the autonomy task execution
-
-AutonomyLeg[] legs  # input, list of legs to be executed
----
-string msg          # output, message to be displayed
----
-string status       # feedback, status of the task
