@@ -25,7 +25,7 @@ services:
     volumes:
       - ../../../zed_ws:/home/marsrover-zed/zed_ws
       - ../../../scripts:/home/marsrover-zed/scripts
-      - ../../base_scripts/tmuxp/tmp:/home/marsrover-zed/.tmuxp
+      - ../../../base_scripts/tmuxp/tmp:/home/marsrover-zed/.tmuxp
       - /usr/local/zed/resources/:/usr/local/zed/resources/
       - /usr/local/zed/settings/:/usr/local/zed/settings/
       # - /usr/local/zed/tools/:/usr/local/zed/tools/
