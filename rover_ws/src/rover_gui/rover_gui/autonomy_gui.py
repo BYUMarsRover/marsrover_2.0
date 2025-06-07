@@ -6,6 +6,9 @@ from action_msgs.msg import GoalStatus
 from action_msgs.srv import CancelGoal
 from rover_interfaces.action import AutonomyTask
 from rover_interfaces.msg import AutonomyLeg
+from visualization_msgs.msg import Marker, MarkerArray
+from std_msgs.msg import ColorRGBA
+from geometry_msgs.msg import Point, Quaternion, Vector3
 from PyQt5.QtWidgets import (
     QApplication,
     QWidget,
@@ -166,6 +169,7 @@ class AutonomyGUI(Node, QWidget):
             "/exec_autonomy_task",
             callback_group=self.callback_group,
         )
+        self.marker_publisher = self.create_publisher(MarkerArray, "/waypoint_previews", 10, callback_group=self.callback_group)
 
         self.waypoints = []
         self.goal_handle = None
@@ -211,6 +215,10 @@ class AutonomyGUI(Node, QWidget):
         self.clear_button = QPushButton("Clear")
         self.clear_button.clicked.connect(self.clear_waypoints)
         buttons_layout.addWidget(self.clear_button)
+
+        self.preview_button = QPushButton("Preview")
+        self.preview_button.clicked.connect(self.preview_waypoints)
+        buttons_layout.addWidget(self.preview_button)
 
         # Start/Stop Layout
         task_layout = QHBoxLayout()
@@ -318,6 +326,7 @@ class AutonomyGUI(Node, QWidget):
         self.start_button.setEnabled(not task_running and len(self.waypoints) > 0)
         self.stop_button.setEnabled(task_running)
         self.save_button.setEnabled(len(self.waypoints) > 0)  # True if >0, False if 0
+        self.preview_button.setEnabled(len(self.waypoints) > 0)
 
     def open_add_waypoint_dialog(self):
         self.get_logger().info("Adding waypoint...")
@@ -485,6 +494,57 @@ class AutonomyGUI(Node, QWidget):
                 QMessageBox.critical(
                     self, "Error", f"Could not load waypoints from file: {e}"
                 )
+
+    def preview_waypoints(self):
+        self.get_logger().info("Previewing waypoints...")
+        marker_array_msg = MarkerArray()
+
+        # Clear old markers
+        clear_marker = Marker()
+        clear_marker.header.frame_id = "map"
+        clear_marker.header.stamp = self.get_clock().now().to_msg()
+        clear_marker.ns = "waypoint_preview"
+        clear_marker.id = 0  # ID 0 with DELETEALL action clears all markers in namespace
+        clear_marker.action = Marker.DELETEALL
+        marker_array_msg.markers.append(clear_marker)
+
+        for i, wp_data in enumerate(self.waypoints):
+            marker = Marker()
+            marker.header.frame_id = "map"
+            marker.header.stamp = self.get_clock().now().to_msg()
+            marker.ns = "waypoint_preview"
+            marker.id = i + 1  # Ensure unique IDs, starting from 1
+            marker.type = Marker.TEXT_VIEW_FACING
+            marker.action = Marker.ADD
+
+            # Use longitude for X and latitude for Y as per common mapviz conventions
+            marker.pose.position.x = float(wp_data.get("longitude", 0.0))
+            marker.pose.position.y = float(wp_data.get("latitude", 0.0))
+            marker.pose.position.z = 0.5  # Slight offset from the ground
+
+            marker.pose.orientation.x = 0.0
+            marker.pose.orientation.y = 0.0
+            marker.pose.orientation.z = 0.0
+            marker.pose.orientation.w = 1.0  # No rotation
+
+            marker.scale.x = 0.0 # Not used for TEXT_VIEW_FACING
+            marker.scale.y = 0.0 # Not used for TEXT_VIEW_FACING
+            marker.scale.z = 0.5  # Text height
+
+            marker.color.r = 1.0
+            marker.color.g = 1.0
+            marker.color.b = 0.0
+            marker.color.a = 1.0  # Opaque yellow
+
+            marker.text = str(wp_data.get("name", f"WP {i+1}"))
+
+            # Lifetime: 0 means permanent until deleted/updated
+            marker.lifetime = rclpy.duration.Duration(seconds=0).to_msg()
+
+            marker_array_msg.markers.append(marker)
+
+        self.marker_publisher.publish(marker_array_msg)
+        self.get_logger().info(f"Published {len(self.waypoints)} waypoint previews.")
 
     def start_task(self):
         self.get_logger().info("Starting task...")
